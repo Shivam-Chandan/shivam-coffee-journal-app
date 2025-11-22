@@ -1,0 +1,53 @@
+Standard .gitignore file for a MERN stack application.
+
+--------------------------------------------------------
+
+1. CRITICAL SECRETS & ENVIRONMENT VARIABLES
+
+--------------------------------------------------------
+
+NEVER commit the .env file containing database URIs or API keys!
+
+.env
+
+--------------------------------------------------------
+
+2. DEPENDENCIES
+
+--------------------------------------------------------
+
+Ignore the node module directories in both the root and the client/server folders.
+
+node_modules
+/client/node_modules
+/server/node_modules
+
+--------------------------------------------------------
+
+3. BUILD OUTPUT & TEMP FILES
+
+--------------------------------------------------------
+
+Output of the React build process (production assets)
+
+The Express server will serve this folder when deployed.
+
+/client/build
+/client/dist
+/dist
+
+Logs
+
+npm-debug.log
+yarn-error.log
+/server/logs/
+
+--------------------------------------------------------
+
+4. OS & EDITOR Files
+
+--------------------------------------------------------
+
+.DS_Store # macOS system files
+.vscode/ # VS Code workspace/settings (optional, sometimes useful to share)
+*.sublime-workspace
