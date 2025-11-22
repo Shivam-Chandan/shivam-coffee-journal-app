@@ -1,49 +1,31 @@
-# Multi-stage Dockerfile for Node.js apps (works for typical React, Next.js, Express apps)
-# Designed for GCP Cloud Build / Cloud Run / App Engine flexible
-# Uses Node 18 LTS; change the version if your repo requires a different Node version.
+# Use the official Node.js image as the base image
+FROM node:20-slim
 
-####################
-# Builder stage
-####################
-FROM node:18-alpine AS builder
+# --- 1. SETUP WORKSPACE ---
+
+# Set the working directory inside the container to /usr/src/app
 WORKDIR /usr/src/app
 
-# Install build dependencies only if needed (keeps final image small)
-# Copy package manifests first to leverage Docker cache
-COPY package*.json ./
+# --- 2. COPY & INSTALL DEPENDENCIES ---
 
-# Use npm ci for reproducible installs; fall back to npm install if lockfile absent
-RUN if [ -f package-lock.json ]; then npm ci --prefer-offline --no-audit --progress=false; else npm install --no-audit --progress=false; fi
+# Copy only the package files from the server/ directory to a server/ folder inside the container.
+# This speeds up subsequent builds by leveraging Docker layer caching.
+COPY server/package*.json ./server/
 
-# Copy the rest of the source
-COPY . .
+# Install server dependencies inside the server folder.
+# This is necessary because server/package.json is there.
+RUN cd server && npm install
 
-# If the project has a build script, run it.
-# This will be a no-op if there is no "build" script in package.json
-RUN if npm run | grep -q ' build'; then npm run build; fi
+# --- 3. COPY SOURCE CODE ---
 
-####################
-# Production image
-####################
-FROM node:18-slim AS runner
-WORKDIR /app
+# Copy the rest of the server source code into the container's server/ directory
+COPY server/ ./server/
 
-ENV NODE_ENV=production
-# If your app expects a specific PORT, GCP services set PORT automatically. Use 8080 as default.
-ENV PORT=8080
+# --- 4. SET ENTRY POINT ---
 
-# Copy package manifests and install only production deps (keeps image small)
-COPY --from=builder /usr/src/app/package*.json ./
-# If you rely on native modules built in builder, copy node_modules from builder; otherwise install production deps here.
-COPY --from=builder /usr/src/app/node_modules ./node_modules
+# Change the working directory to the server application root.
+WORKDIR /usr/src/app/server
 
-# Copy the rest of the app (including built assets in /build or /.next or /dist if applicable)
-COPY --from=builder /usr/src/app ./
-
-# Expose the port Cloud Run and App Engine expect
-EXPOSE 8080
-
-# Start the app. Ensure your package.json has a "start" script.
-# For Next.js: "start": "next start -p $PORT"
-# For CRA static: use a simple static server like "serve -s build -l $PORT"
-CMD ["npm", "start"]
+# Command to run the application using the start script in server/package.json.
+# This ensures the Express server starts listening on the PORT provided by Cloud Run.
+CMD [ "npm", "start" ]
