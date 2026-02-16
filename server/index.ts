@@ -1,4 +1,5 @@
 import express, { type Request, Response, NextFunction } from "express";
+import "./db";  // Initialize Firebase Admin SDK before anything else
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 
