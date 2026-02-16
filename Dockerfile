@@ -1,31 +1,51 @@
-# Use the official Node.js image as the base image
-FROM node:20-slim
+# Multi-stage build for production deployment on GCP
 
-# --- 1. SETUP WORKSPACE ---
+# Stage 1: Build the application
+FROM node:20-slim AS builder
 
-# Set the working directory inside the container to /usr/src/app
 WORKDIR /usr/src/app
 
-# --- 2. COPY & INSTALL DEPENDENCIES ---
-
-# Copy only the package files from the server/ directory to a server/ folder inside the container.
-# This speeds up subsequent builds by leveraging Docker layer caching.
-COPY server/package*.json ./server/
-
-# Install server dependencies inside the server folder.
-# This is necessary because server/package.json is there.
-RUN cd server && npm install
-
-# --- 3. COPY SOURCE CODE ---
-
-# Copy the rest of the server source code into the container's server/ directory
+# Copy all source files
+COPY package*.json ./
+COPY client/ ./client/
 COPY server/ ./server/
+COPY shared/ ./shared/
+COPY tsconfig.json vite.config.ts tailwind.config.ts postcss.config.js components.json ./
 
-# --- 4. SET ENTRY POINT ---
+# Install all dependencies
+RUN npm install
 
-# Change the working directory to the server application root.
-WORKDIR /usr/src/app/server
+# Build the client
+RUN npm run build
 
-# Command to run the application using the start script in server/package.json.
-# This ensures the Express server starts listening on the PORT provided by Cloud Run.
-CMD [ "npm", "start" ]
+# Stage 2: Runtime image
+FROM node:20-slim
+
+WORKDIR /usr/src/app
+
+# Copy package files
+COPY --from=builder /usr/src/app/package*.json ./
+
+# Install production dependencies only
+RUN npm install --omit=dev
+
+# Copy built client from builder stage
+COPY --from=builder /usr/src/app/dist ./dist/
+
+# Copy server code
+COPY server/ ./server/
+COPY shared/ ./shared/
+
+# Copy server module files if needed
+COPY --from=builder /usr/src/app/node_modules ./node_modules/
+
+# Set environment variables for production
+ENV NODE_ENV=production
+ENV PORT=8080
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
+    CMD node -e "require('http').get('http://localhost:8080', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"
+
+# Start the application
+CMD ["npm", "start"]

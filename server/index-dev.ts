@@ -8,6 +8,7 @@ import { createServer as createViteServer, createLogger } from "vite";
 
 import viteConfig from "../vite.config";
 import runApp from "./app";
+import { initializeFirebase } from "./firebase";
 
 export async function setupVite(app: Express, server: Server) {
   const viteLogger = createLogger();
@@ -59,5 +60,9 @@ export async function setupVite(app: Express, server: Server) {
 }
 
 (async () => {
+  // Initialize Firebase if in production mode or if explicitly requested in development
+  if (process.env.NODE_ENV === "production" || process.env.USE_FIRESTORE === "true") {
+    initializeFirebase();
+  }
   await runApp(setupVite);
 })();

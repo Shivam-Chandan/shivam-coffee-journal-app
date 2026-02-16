@@ -1,5 +1,6 @@
 import { type Coffee, type InsertCoffee } from "@shared/schema";
 import { randomUUID } from "crypto";
+import { FirestoreStorage } from "./firestore-storage";
 
 export interface IStorage {
   // Coffee operations
@@ -56,4 +57,8 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+// Use Firestore in production, MemStorage in development
+export const storage = 
+  process.env.NODE_ENV === "production" 
+    ? new FirestoreStorage() 
+    : new MemStorage();
