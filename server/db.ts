@@ -19,7 +19,15 @@ if (!projectId) {
   console.warn("⚠️ No GCP_PROJECT_ID found in config or environment. Firebase may not initialize properly.");
 }
 
-// 3. Initialize the App
+// 3. Determine database name (default is "(default)")
+const databaseName = process.env.FIRESTORE_DATABASE_NAME || undefined;
+if (databaseName) {
+  console.log(`📦 Using Firestore database: "${databaseName}"`);
+} else {
+  console.log(`📦 Using default Firestore database: "(default)"`);
+}
+
+// 4. Initialize the App
 if (!getApps().length) {
   try {
     initializeApp({
@@ -33,7 +41,7 @@ if (!getApps().length) {
   }
 }
 
-export const db = getFirestore();
+export const db = databaseName ? getFirestore(databaseName) : getFirestore();
 
 // 4. Connection Health Check
 // This will trigger a real network request to verify the connection.
