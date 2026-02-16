@@ -1,64 +1,39 @@
-import { type Coffee, type InsertCoffee } from "@shared/schema";
-import { randomUUID } from "crypto";
-import { FirestoreStorage } from "./firestore-storage";
+import { db } from "./db";
+// Make sure these types exist in your shared/schema.ts!
+// If not, replace them with 'any' for now to get the build passing.
+import type { InsertCoffee, Coffee } from "@shared/schema"; 
 
 export interface IStorage {
-  // Coffee operations
   getCoffees(): Promise<Coffee[]>;
-  getCoffee(id: string): Promise<Coffee | undefined>;
   createCoffee(coffee: InsertCoffee): Promise<Coffee>;
-  updateCoffee(id: string, coffee: InsertCoffee): Promise<Coffee | undefined>;
-  deleteCoffee(id: string): Promise<boolean>;
 }
 
-export class MemStorage implements IStorage {
-  private coffees: Map<string, Coffee>;
-
-  constructor() {
-    this.coffees = new Map();
-  }
-
+export class FirestoreStorage implements IStorage {
   async getCoffees(): Promise<Coffee[]> {
-    return Array.from(this.coffees.values()).sort((a, b) => {
-      return new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime();
-    });
-  }
-
-  async getCoffee(id: string): Promise<Coffee | undefined> {
-    return this.coffees.get(id);
+    const snapshot = await db.collection('coffees').orderBy('createdAt', 'desc').get();
+    return snapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+            id: doc.id,
+            ...data,
+            // Convert Firestore Timestamp to Date if needed, or keep as string
+            createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date() 
+        };
+    }) as Coffee[];
   }
 
   async createCoffee(insertCoffee: InsertCoffee): Promise<Coffee> {
-    const id = randomUUID();
-    const coffee: Coffee = { 
-      ...insertCoffee, 
-      id 
-    };
-    this.coffees.set(id, coffee);
-    return coffee;
-  }
-
-  async updateCoffee(id: string, insertCoffee: InsertCoffee): Promise<Coffee | undefined> {
-    const existing = this.coffees.get(id);
-    if (!existing) {
-      return undefined;
-    }
-    
-    const updated: Coffee = {
+    const docRef = await db.collection('coffees').add({
       ...insertCoffee,
-      id,
-    };
-    this.coffees.set(id, updated);
-    return updated;
-  }
-
-  async deleteCoffee(id: string): Promise<boolean> {
-    return this.coffees.delete(id);
+      createdAt: new Date(),
+    });
+    
+    return {
+      id: docRef.id,
+      ...insertCoffee,
+      createdAt: new Date()
+    } as Coffee;
   }
 }
 
-// Use Firestore in production, MemStorage in development
-export const storage = 
-  process.env.NODE_ENV === "production" 
-    ? new FirestoreStorage() 
-    : new MemStorage();
+export const storage = new FirestoreStorage();

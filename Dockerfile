@@ -1,51 +1,39 @@
-# Multi-stage build for production deployment on GCP
-
-# Stage 1: Build the application
+# Stage 1: Build
 FROM node:20-slim AS builder
-
 WORKDIR /usr/src/app
 
-# Copy all source files
+# Copy config files
 COPY package*.json ./
-COPY client/ ./client/
-COPY server/ ./server/
-COPY shared/ ./shared/
 COPY tsconfig.json vite.config.ts tailwind.config.ts postcss.config.js components.json ./
 
-# Install all dependencies
+# Install ALL dependencies (including devDeps for building)
 RUN npm install
 
-# Build the client
+# Copy source code
+COPY . .
+
+# Build the client and server
+# This runs the "build" script we defined in package.json
 RUN npm run build
 
-# Stage 2: Runtime image
+# Stage 2: Production Runtime
 FROM node:20-slim
-
 WORKDIR /usr/src/app
 
-# Copy package files
-COPY --from=builder /usr/src/app/package*.json ./
-
-# Install production dependencies only
-RUN npm install --omit=dev
-
-# Copy built client from builder stage
-COPY --from=builder /usr/src/app/dist ./dist/
-
-# Copy server code
-COPY server/ ./server/
-COPY shared/ ./shared/
-
-# Copy server module files if needed
-COPY --from=builder /usr/src/app/node_modules ./node_modules/
-
-# Set environment variables for production
 ENV NODE_ENV=production
 ENV PORT=8080
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
-    CMD node -e "require('http').get('http://localhost:8080', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"
+# Copy package.json to install runtime deps
+COPY --from=builder /usr/src/app/package*.json ./
 
-# Start the application
+# Install ONLY production dependencies (saves space, avoids dev conflicts)
+RUN npm install --omit=dev
+
+# Copy the built artifacts from Stage 1
+COPY --from=builder /usr/src/app/dist ./dist
+
+# Expose the port Cloud Run expects
+EXPOSE 8080
+
+# Start the server
 CMD ["npm", "start"]
