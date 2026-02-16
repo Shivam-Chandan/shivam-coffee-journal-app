@@ -12,14 +12,14 @@ export class FirestoreStorage implements IStorage {
   async getCoffees(): Promise<Coffee[]> {
     const snapshot = await db.collection('coffees').orderBy('createdAt', 'desc').get();
     return snapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-            id: doc.id,
-            ...data,
-            // Convert Firestore Timestamp to Date if needed, or keep as string
-            createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date() 
-        };
-    }) as Coffee[];
+      const data = doc.data();
+      return {
+        id: doc.id,
+        ...data,
+        // Convert Firestore Timestamp to Date if needed, or keep as string
+        createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date()
+      };
+    }) as unknown as Coffee[];
   }
 
   async createCoffee(insertCoffee: InsertCoffee): Promise<Coffee> {
