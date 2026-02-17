@@ -1,0 +1,71 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "chrome",
+            "request": "launch",
+            "name": "Debug Chrome (Client)",
+            "url": "http://localhost:5173",
+            "webRoot": "${workspaceFolder}/client",
+            "sourceMaps": true,
+            "sourceMapPathOverrides": {
+                "webpack:///./src/*": "${webRoot}/src/*"
+            },
+            "disableNetworkCache": true,
+            "runtimeArgs": [
+                "--disable-extensions",
+                "--disable-sync"
+            ]
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "Debug Node Server",
+            "program": "${workspaceFolder}/server/index.ts",
+            "preLaunchTask": "npm: dev",
+            "outFiles": [
+                "${workspaceFolder}/dist/**/*.js"
+            ],
+            "sourceMaps": true,
+            "protocol": "inspector",
+            "console": "integratedTerminal",
+            "internalConsoleOptions": "neverOpen",
+            "restart": true,
+            "runtimeArgs": [
+                "--loader",
+                "tsx"
+            ]
+        },
+        {
+            "type": "chrome",
+            "request": "launch",
+            "name": "Debug Full Stack (Chrome + Node)",
+            "url": "http://localhost:5173",
+            "webRoot": "${workspaceFolder}/client",
+            "sourceMaps": true,
+            "sourceMapPathOverrides": {
+                "webpack:///./src/*": "${webRoot}/src/*"
+            },
+            "disableNetworkCache": true,
+            "runtimeArgs": [
+                "--disable-extensions",
+                "--disable-sync"
+            ],
+            "preLaunchTask": "npm: dev",
+            "compounds": []
+        }
+    ],
+    "compounds": [
+        {
+            "name": "Full Stack Debug",
+            "configurations": [
+                "Debug Node Server",
+                "Debug Chrome (Client)"
+            ],
+            "stopAll": true
+        }
+    ]
+}
