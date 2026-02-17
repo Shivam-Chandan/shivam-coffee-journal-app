@@ -1,3 +1,4 @@
+import "dotenv/config";  // Load .env variables at the very start
 import express, { type Request, Response, NextFunction } from "express";
 import "./db";  // Initialize Firebase Admin SDK before anything else
 import { registerRoutes } from "./routes";
