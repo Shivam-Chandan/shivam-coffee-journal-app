@@ -78,7 +78,9 @@ This document outlines the changes made to migrate the Coffee Journal app from i
 interface CoffeeDocument {
   id: string;                    // Document ID (auto-generated or custom)
   brandName: string;             // Coffee brand name
-  quantity: string;              // Quantity ordered
+  coffeeName: string;            // Coffee name
+  quantity: string;              // Quantity ordered (numeric portion)
+  quantityUnit: string;           // Unit for quantity: "g" or "kg"
   orderDate: Timestamp;          // Order date (as Firestore Timestamp)
   roast: string;                 // Roast level
   formFactor: string;            // Form factor (beans, grounds, etc.)
@@ -86,7 +88,7 @@ interface CoffeeDocument {
   bitternessRating: number;      // 1-10 rating
   acidityRating: number;         // 1-10 rating
   noteClarityRating: number;     // 1-10 rating
-  overallTasteRating: number;    // 1-10 rating
+  overallTasteRating: number;    // 1-5 rating (older entries >=5 will be downscaled automatically)
   worthReordering: number;       // 0 or 1 (boolean as number)
   createdAt: Timestamp;          // Auto-set on creation
 }

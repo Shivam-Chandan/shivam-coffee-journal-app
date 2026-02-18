@@ -39,15 +39,17 @@ export function CoffeeForm({ coffee, onSuccess }: CoffeeFormProps) {
     resolver: zodResolver(insertCoffeeSchema),
     defaultValues: {
       brandName: coffee?.brandName || "",
+      coffeeName: coffee?.coffeeName || "",
       quantity: coffee?.quantity || "",
+      quantityUnit: coffee?.quantityUnit || "g",
       orderDate: coffee?.orderDate || new Date().toISOString().split('T')[0],
       roast: coffee?.roast || "",
-      formFactor: coffee?.formFactor || "",
+      formFactor: coffee?.formFactor || "Whole Beans",
       notes: coffee?.notes || "",
       bitternessRating: coffee?.bitternessRating || 5,
       acidityRating: coffee?.acidityRating || 5,
       noteClarityRating: coffee?.noteClarityRating || 5,
-      overallTasteRating: coffee?.overallTasteRating || 5,
+      overallTasteRating: coffee?.overallTasteRating || 3,
       worthReordering: coffee?.worthReordering || 0,
     },
   });
@@ -109,13 +111,31 @@ export function CoffeeForm({ coffee, onSuccess }: CoffeeFormProps) {
         <div className="space-y-4">
           <FormField
             control={form.control}
+            name="coffeeName"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Coffee Name</FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder="e.g., Peaberry, Viena Roast"
+                    {...field}
+                    data-testid="input-coffee-name"
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
             name="brandName"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Brand Name</FormLabel>
                 <FormControl>
                   <Input 
-                    placeholder="e.g., Lavazza, Illy, Blue Bottle" 
+                    placeholder="e.g., Toffee Coffee, Lavazza, Blue Tokai" 
                     {...field} 
                     data-testid="input-brand-name"
                   />
@@ -125,7 +145,7 @@ export function CoffeeForm({ coffee, onSuccess }: CoffeeFormProps) {
             )}
           />
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-4">
             <FormField
               control={form.control}
               name="quantity"
@@ -134,14 +154,45 @@ export function CoffeeForm({ coffee, onSuccess }: CoffeeFormProps) {
                   <FormLabel>Quantity</FormLabel>
                   <FormControl>
                     <Input 
-                      placeholder="e.g., 250g, 1kg" 
+                      placeholder="e.g., 250" 
                       {...field} 
                       data-testid="input-quantity"
                     />
                   </FormControl>
                   <FormDescription>
-                    e.g., 250g, 1kg
+                    e.g., 250
                   </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="quantityUnit"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Unit</FormLabel>
+                  <FormControl>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger data-testid="select-quantity-unit">
+                          <SelectValue placeholder="Unit" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="g" data-testid="option-unit-g">
+                          gm
+                        </SelectItem>
+                        <SelectItem value="kg" data-testid="option-unit-kg">
+                          kg
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
@@ -197,7 +248,7 @@ export function CoffeeForm({ coffee, onSuccess }: CoffeeFormProps) {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Form Factor</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select onValueChange={field.onChange} defaultValue={field.value || "Whole Beans"}>
                     <FormControl>
                       <SelectTrigger data-testid="select-form-factor">
                         <SelectValue placeholder="Select form" />
@@ -330,14 +381,14 @@ export function CoffeeForm({ coffee, onSuccess }: CoffeeFormProps) {
                 <div className="flex items-center justify-between mb-2">
                   <FormLabel>Overall Taste</FormLabel>
                   <span className="text-sm font-medium" data-testid="text-overall-taste-value">
-                    {field.value}/10
+                    {field.value}/5
                   </span>
                 </div>
                 <FormControl>
                   <Slider
                     min={1}
-                    max={10}
-                    step={1}
+                    max={5}
+                    step={0.5}
                     value={[field.value]}
                     onValueChange={(value) => field.onChange(value[0])}
                     data-testid="slider-overall-taste"

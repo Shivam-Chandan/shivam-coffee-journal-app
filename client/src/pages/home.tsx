@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Coffee } from "@shared/schema";
 import { CoffeeForm } from "@/components/coffee-form";
@@ -10,10 +10,39 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 export default function Home() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingCoffee, setEditingCoffee] = useState<Coffee | null>(null);
+  const [sortOption, setSortOption] = useState<"orderDate" | "overallTasteRating">("orderDate");
 
-  const { data: coffees = [], isLoading } = useQuery<Coffee[]>({
-    queryKey: ["/api/coffees"],
+  // useQuery with explicit generic parameters for return and key types
+  const queryResult = useQuery<
+    Coffee[],
+    Error,
+    Coffee[],
+    [string, string]
+  >({
+    queryKey: ["/api/coffees", sortOption],
+    queryFn: async (): Promise<Coffee[]> => {
+      console.log("fetching coffees sorted by", sortOption);
+      const res = await fetch(`/api/coffees?sort=${sortOption}`, {
+        credentials: "include",
+        cache: "no-store",
+      });
+      if (!res.ok) {
+        throw new Error(`${res.status}: ${res.statusText}`);
+      }
+      return res.json();
+    },
+
+    staleTime: 0,
   });
+
+  const coffees = queryResult.data ?? [];
+  const isLoading = queryResult.isLoading;
+  const refetch = queryResult.refetch;
+
+  // whenever sort option changes, fire a refetch to ensure fresh data
+  useEffect(() => {
+    refetch();
+  }, [sortOption, refetch]);
 
   const handleEdit = (coffee: Coffee) => {
     setEditingCoffee(coffee);
@@ -41,8 +70,8 @@ export default function Home() {
           </p>
         </header>
 
-        {/* Add Coffee Button */}
-        <div className="mb-8">
+        {/* Add Coffee Button & Sort */}
+        <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
             <DialogTrigger asChild>
               <Button 
@@ -67,6 +96,25 @@ export default function Home() {
               />
             </DialogContent>
           </Dialog>
+          {/* sort select for entries */}
+          <div className="flex items-center gap-2">
+            <label htmlFor="select-sort" className="text-sm font-medium">
+              Sort by:
+            </label>
+            <select
+              id="select-sort"
+              value={sortOption}
+              onChange={(e) => {
+                const v = e.target.value as "orderDate" | "overallTasteRating";
+                setSortOption(v);
+              }}
+              className="border rounded px-2 py-1"
+              data-testid="select-sort"
+            >
+              <option value="orderDate">Order Date</option>
+              <option value="overallTasteRating">Rating</option>
+            </select>
+          </div>
         </div>
 
         {/* Coffee Grid or Empty State */}

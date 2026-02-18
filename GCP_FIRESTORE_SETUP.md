@@ -108,6 +108,7 @@ The app automatically creates a `coffees` collection with documents containing:
   "id": "document-id",
   "brandName": "string",
   "quantity": "string",
+  "quantityUnit": "string",  # "g" or "kg"
   "orderDate": "Timestamp",
   "roast": "string",
   "formFactor": "string",

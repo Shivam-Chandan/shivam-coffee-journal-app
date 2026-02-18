@@ -3,7 +3,9 @@ import { z } from "zod";
 // Zod validation schema for coffee entries
 export const insertCoffeeSchema = z.object({
   brandName: z.string().min(1, "Brand name is required"),
+  coffeeName: z.string().min(1, "Coffee name is required"),
   quantity: z.string().min(1, "Quantity is required"),
+  quantityUnit: z.enum(["g", "kg"]).default("g"),
   orderDate: z.string().min(1, "Order date is required"),
   roast: z.string().min(1, "Roast type is required"),
   formFactor: z.string().min(1, "Form factor is required"),
@@ -11,7 +13,7 @@ export const insertCoffeeSchema = z.object({
   bitternessRating: z.number().min(1).max(10),
   acidityRating: z.number().min(1).max(10),
   noteClarityRating: z.number().min(1).max(10),
-  overallTasteRating: z.number().min(1).max(10),
+  overallTasteRating: z.number().min(1).max(5),
   worthReordering: z.number().min(0).max(1),
 });
 

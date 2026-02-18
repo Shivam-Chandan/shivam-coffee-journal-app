@@ -37,7 +37,8 @@
 - Full width with subtle border, rounded-lg
 - Focus state: border highlight with ring effect
 - Labels above inputs with required indicators
-- Helper text below for guidance (e.g., "e.g., 250g, 1kg")
+- Helper text below for guidance (e.g., "e.g., 250 g or 1 kg")
+  - Quantity field paired with unit dropdown defaulting to grams
 
 **Dropdown Selects:**
 - Roast Level: Light, Medium, Medium-Dark, Dark
@@ -46,7 +47,7 @@
 
 **Rating Sliders:**
 - Four dedicated sliders for: Bitterness, Acidity, Note Clarity, Overall Taste
-- Display current value (1-10) prominently beside slider
+- Display current value (1-5, halves allowed) prominently beside slider
 - Visual markers at intervals
 - Each slider in its own labeled container with gap-2
 
@@ -66,10 +67,10 @@
 - Rounded-xl cards with subtle shadow
 - Padding: p-6
 - Each card shows:
-  - Brand name as card header (text-lg font-semibold)
-  - Two-column info grid: Date, Quantity, Roast, Form Factor
+  - Coffee name as card header (text-lg font-semibold) with brand as subheader
+  - Two-column info grid: Date, Quantity (with unit), Roast, Form Factor
   - Tasting notes in dedicated section (text-sm, italic)
-  - Rating summary: Four compact rating bars showing scores
+  - Rating summary: Three compact rating bars showing scores (bitterness, acidity, clarity; overall taste now shown as stars)
   - Reorder badge: Pill-shaped indicator
   - Edit/Delete action buttons in card footer
 
@@ -115,6 +116,9 @@
   - Submit button
   ↓
 [Filter/Sort Controls]
+- Simple sort dropdown placed near add button
+  - Options: Order Date (default), Overall Taste
+  - Should trigger re-fetch and re-arrange card grid
   ↓
 [Coffee Entries Grid]
   - Responsive card grid

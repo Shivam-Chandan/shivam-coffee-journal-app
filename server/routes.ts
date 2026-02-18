@@ -5,9 +5,13 @@ import { insertCoffeeSchema } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Get all coffees
-  app.get("/api/coffees", async (_req, res) => {
+  app.get("/api/coffees", async (req, res) => {
     try {
-      const coffees = await storage.getCoffees();
+      // allow sorting by date or overall taste rating
+      const sortParam = req.query.sort as string | undefined;
+      console.log("GET /api/coffees sortParam=", sortParam);
+      const sortKey = sortParam === "overallTasteRating" ? "overallTasteRating" : "orderDate";
+      const coffees = await storage.getCoffees(sortKey as any);
       res.json(coffees);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch coffees" });
