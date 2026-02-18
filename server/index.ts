@@ -1,12 +1,7 @@
-import "dotenv/config";  // Load .env variables at the very start
 import express, { type Request, Response, NextFunction } from "express";
 import fs from "fs";
 import path, { dirname } from "path";
 import { fileURLToPath } from "url";
-import { createServer as createViteServer } from "vite";
-import "./db";  // Initialize Firebase Admin SDK before anything else
-import { registerRoutes } from "./routes";
-import { serveStatic, log } from "./vite";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -46,11 +41,38 @@ app.use((req, res, next) => {
   next();
 });
 
+function log(message: string, source = "express") {
+  const formattedTime = new Date().toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: true,
+  });
+
+  console.log(`${formattedTime} [${source}] ${message}`);
+}
+
+function serveStatic(app: express.Express) {
+  const distPath = path.resolve(__dirname, "public");
+
+  if (!fs.existsSync(distPath)) {
+    throw new Error(
+      `Could not find the build directory: ${distPath}, make sure to build the client first`
+    );
+  }
+
+  app.use(express.static(distPath));
+
+  app.use("*", (_req, res) => {
+    res.sendFile(path.resolve(distPath, "index.html"));
+  });
+}
+
 async function setupVite(app: express.Express, server: any) {
+  const { createServer: createViteServer } = await import("vite");
   const serverOptions = {
     middlewareMode: true,
     hmr: { server },
-    allowedHosts: true,
   };
 
   const vite = await createViteServer({
@@ -82,6 +104,15 @@ async function setupVite(app: express.Express, server: any) {
 }
 
 (async () => {
+  // Load .env variables only in development
+  if (process.env.NODE_ENV !== "production") {
+    await import("dotenv/config");
+  }
+
+  // Initialize Firebase Admin SDK after env vars are loaded
+  await import("./db");
+  const { registerRoutes } = await import("./routes");
+
   // FIX 1: await the routes registration so 'server' is the actual HTTP server, not a Promise
   const server = await registerRoutes(app);
 
