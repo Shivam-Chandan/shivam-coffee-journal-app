@@ -18,46 +18,57 @@ export interface IStorage {
 
 export class FirestoreStorage implements IStorage {
   private collectionName = "coffees";
+  private allCoffeesCache: Coffee[] | null = null;
 
   async getCoffees(sort: CoffeeSortKey = 'orderDate', brandName?: string): Promise<Coffee[]> {
-    // ensure we only allow permitted fields
-    const sortField: CoffeeSortKey = sort === 'overallTasteRating' ? 'overallTasteRating' : 'orderDate';
-
-    // build firestore query, optionally filtering by brand
-    let query: FirebaseFirestore.Query = db.collection(this.collectionName);
-    if (brandName) {
-      query = query.where('brandName', '==', brandName);
+    if (!this.allCoffeesCache) {
+      // Fetch all coffees first to avoid Firestore composite index requirements
+      // when filtering and sorting on different fields.
+      const snapshot = await db.collection(this.collectionName).get();
+      
+      this.allCoffeesCache = snapshot.docs.map(doc => {
+        const data = doc.data() as any;
+        // normalize rating in case older entries used 10-point scale
+        let overall = data.overallTasteRating;
+        if (typeof overall === 'number' && overall > 5) {
+          overall = overall / 2;
+        }
+        return {
+          id: doc.id,
+          coffeeName: data.coffeeName || "",
+          quantityUnit: data.quantityUnit || "g",
+          ...data,
+          overallTasteRating: overall,
+        } as Coffee;
+      });
     }
-    query = query.orderBy(sortField, 'desc');
 
-    const snapshot = await query.get();
+    // Use a shallow copy of the cache for filtering/sorting
+    let coffees = [...this.allCoffeesCache];
+
+    // Filter in-memory
+    if (brandName) {
+      coffees = coffees.filter(c => c.brandName === brandName);
+    }
+
+    // Sort in-memory
+    const sortField = sort === 'overallTasteRating' ? 'overallTasteRating' : 'orderDate';
     
-    const coffees: Coffee[] = snapshot.docs.map(doc => {
-      const data = doc.data() as any;
-      // normalize rating in case older entries used 10-point scale
-      let overall = data.overallTasteRating;
-      if (typeof overall === 'number' && overall > 5) {
-        overall = overall / 2;
-      }
-      return {
-        id: doc.id,
-        coffeeName: data.coffeeName || "",
-        quantityUnit: data.quantityUnit || "g",
-        ...data,
-        overallTasteRating: overall,
-      } as Coffee;
-    });
-
-    // Firestore ordering can be funky if values are missing or stored as strings;
-    // perform a stable client-side sort as a safety net when rating-based.
-    if (sortField === 'overallTasteRating') {
-      coffees.sort((a, b) => {
-        // treat undefined as 0
+    coffees.sort((a, b) => {
+      if (sortField === 'overallTasteRating') {
         const ra = typeof a.overallTasteRating === 'number' ? a.overallTasteRating : 0;
         const rb = typeof b.overallTasteRating === 'number' ? b.overallTasteRating : 0;
         return rb - ra;
-      });
-    }
+      } else {
+        // orderDate (descending)
+        const getMillis = (d: any) => {
+          if (!d) return 0;
+          if (typeof d.toDate === 'function') return d.toDate().getTime();
+          return new Date(d).getTime();
+        };
+        return getMillis(b.orderDate) - getMillis(a.orderDate);
+      }
+    });
 
     return coffees;
   }
@@ -82,6 +93,7 @@ export class FirestoreStorage implements IStorage {
       createdAt: new Date(),
     });
     
+    this.allCoffeesCache = null;
     return {
       id: docRef.id,
       ...insertCoffee
@@ -101,6 +113,7 @@ export class FirestoreStorage implements IStorage {
       updatedAt: new Date(),
     });
     
+    this.allCoffeesCache = null;
     return { id, ...insertCoffee } as Coffee;
   }
 
@@ -113,6 +126,7 @@ export class FirestoreStorage implements IStorage {
     }
     
     await docRef.delete();
+    this.allCoffeesCache = null;
     return true;
   }
 }

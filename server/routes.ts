@@ -10,13 +10,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // allow sorting by date or overall taste rating, and optional filter by
       // brand name. `brand` is expected to match the stored `brandName`.
       const sortParam = req.query.sort as string | undefined;
-      const brandParam = req.query.brand as string | undefined;
+      // Ensure brandParam is a string (handle array or undefined)
+      const brandParam = typeof req.query.brand === 'string' ? req.query.brand : undefined;
       console.log("GET /api/coffees sortParam=", sortParam, "brand=", brandParam);
 
       const sortKey = sortParam === "overallTasteRating" ? "overallTasteRating" : "orderDate";
       const coffees = await storage.getCoffees(sortKey as any, brandParam);
       res.json(coffees);
     } catch (error) {
+      console.error("Error fetching coffees:", error);
       res.status(500).json({ error: "Failed to fetch coffees" });
     }
   });
