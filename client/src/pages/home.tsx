@@ -13,6 +13,9 @@ export default function Home() {
   const [sortOption, setSortOption] = useState<"orderDate" | "overallTasteRating">("orderDate");
   const [brandFilter, setBrandFilter] = useState<string>("");
 
+  // Fetch user info for the title
+  const { data: user } = useQuery<any>({ queryKey: ["/api/user"] });
+
   // useQuery with explicit generic parameters for return and key types
   const queryResult = useQuery<
     Coffee[],
@@ -67,12 +70,17 @@ export default function Home() {
           <div className="flex items-center gap-3 mb-2">
             <CoffeeIcon className="w-8 h-8 text-primary" data-testid="icon-coffee" />
             <h1 className="text-3xl font-bold" data-testid="text-page-title">
-              Shivam's Coffee Journal
+              {user?.displayName ? `${user.displayName}'s` : 'My'} Coffee Journal
             </h1>
           </div>
-          <p className="text-muted-foreground" data-testid="text-subtitle">
-            {coffees.length} {coffees.length === 1 ? 'coffee' : 'coffees'} tracked
-          </p>
+          <div className="flex justify-between items-center">
+            <p className="text-muted-foreground" data-testid="text-subtitle">
+              {coffees.length} {coffees.length === 1 ? 'coffee' : 'coffees'} tracked
+            </p>
+            <Button variant="ghost" size="sm" onClick={() => window.location.href = "/api/auth/logout"}>
+              Logout
+            </Button>
+          </div>
         </header>
 
         {/* Add Coffee Button & Sort */}
