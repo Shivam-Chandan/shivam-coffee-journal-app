@@ -11,18 +11,23 @@ export default function Home() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingCoffee, setEditingCoffee] = useState<Coffee | null>(null);
   const [sortOption, setSortOption] = useState<"orderDate" | "overallTasteRating">("orderDate");
+  const [brandFilter, setBrandFilter] = useState<string>("");
 
   // useQuery with explicit generic parameters for return and key types
   const queryResult = useQuery<
     Coffee[],
     Error,
     Coffee[],
-    [string, string]
+    [string, string, string]
   >({
-    queryKey: ["/api/coffees", sortOption],
+    queryKey: ["/api/coffees", sortOption, brandFilter],
     queryFn: async (): Promise<Coffee[]> => {
-      console.log("fetching coffees sorted by", sortOption);
-      const res = await fetch(`/api/coffees?sort=${sortOption}`, {
+      console.log("fetching coffees sorted by", sortOption, "brand=", brandFilter);
+      let url = `/api/coffees?sort=${sortOption}`;
+      if (brandFilter) {
+        url += `&brand=${encodeURIComponent(brandFilter)}`;
+      }
+      const res = await fetch(url, {
         credentials: "include",
         cache: "no-store",
       });
@@ -39,10 +44,10 @@ export default function Home() {
   const isLoading = queryResult.isLoading;
   const refetch = queryResult.refetch;
 
-  // whenever sort option changes, fire a refetch to ensure fresh data
+  // whenever sort option or brand filter changes, refetch
   useEffect(() => {
     refetch();
-  }, [sortOption, refetch]);
+  }, [sortOption, brandFilter, refetch]);
 
   const handleEdit = (coffee: Coffee) => {
     setEditingCoffee(coffee);
@@ -96,24 +101,55 @@ export default function Home() {
               />
             </DialogContent>
           </Dialog>
-          {/* sort select for entries */}
-          <div className="flex items-center gap-2">
-            <label htmlFor="select-sort" className="text-sm font-medium">
-              Sort by:
-            </label>
-            <select
-              id="select-sort"
-              value={sortOption}
-              onChange={(e) => {
-                const v = e.target.value as "orderDate" | "overallTasteRating";
-                setSortOption(v);
-              }}
-              className="border rounded px-2 py-1"
-              data-testid="select-sort"
-            >
-              <option value="orderDate">Order Date</option>
-              <option value="overallTasteRating">Rating</option>
-            </select>
+          {/* sort select and brand filter for entries */}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+            <div className="flex items-center gap-2">
+              <label htmlFor="select-sort" className="text-sm font-medium">
+                Sort by:
+              </label>
+              <select
+                id="select-sort"
+                value={sortOption}
+                onChange={(e) => {
+                  const v = e.target.value as "orderDate" | "overallTasteRating";
+                  setSortOption(v);
+                }}
+                className="border rounded px-2 py-1"
+                data-testid="select-sort"
+              >
+                <option value="orderDate">Order Date</option>
+                <option value="overallTasteRating">Rating</option>
+              </select>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <label htmlFor="input-brand" className="text-sm font-medium">
+                Brand:
+              </label>
+              <input
+                id="input-brand"
+                list="brand-options"
+                value={brandFilter}
+                onChange={(e) => setBrandFilter(e.target.value)}
+                className="border rounded px-2 py-1"
+                data-testid="input-filter-brand"
+                placeholder="All"
+              />
+              <datalist id="brand-options">
+                {Array.from(new Set(coffees.map((c) => c.brandName).filter(Boolean))).map((b) => (
+                  <option key={b} value={b} />
+                ))}
+              </datalist>
+              {brandFilter && (
+                <button
+                  className="text-sm text-muted-foreground"
+                  onClick={() => setBrandFilter("")}
+                  data-testid="button-clear-brand"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
           </div>
         </div>
 

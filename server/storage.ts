@@ -6,8 +6,10 @@ export type CoffeeSortKey = "orderDate" | "overallTasteRating";
 export interface IStorage {
   /**
    * @param sort Optional field to sort by (desc). Defaults to orderDate.
+   * @param brandName Optional filter; if provided only coffees matching the
+   *                    exact brand name will be returned.
    */
-  getCoffees(sort?: CoffeeSortKey): Promise<Coffee[]>;
+  getCoffees(sort?: CoffeeSortKey, brandName?: string): Promise<Coffee[]>;
   getCoffee(id: string): Promise<Coffee | undefined>;
   createCoffee(coffee: InsertCoffee): Promise<Coffee>;
   updateCoffee(id: string, coffee: InsertCoffee): Promise<Coffee | undefined>;
@@ -17,12 +19,18 @@ export interface IStorage {
 export class FirestoreStorage implements IStorage {
   private collectionName = "coffees";
 
-  async getCoffees(sort: CoffeeSortKey = 'orderDate'): Promise<Coffee[]> {
+  async getCoffees(sort: CoffeeSortKey = 'orderDate', brandName?: string): Promise<Coffee[]> {
     // ensure we only allow permitted fields
     const sortField: CoffeeSortKey = sort === 'overallTasteRating' ? 'overallTasteRating' : 'orderDate';
-    const snapshot = await db.collection(this.collectionName)
-      .orderBy(sortField, 'desc')
-      .get();
+
+    // build firestore query, optionally filtering by brand
+    let query: FirebaseFirestore.Query = db.collection(this.collectionName);
+    if (brandName) {
+      query = query.where('brandName', '==', brandName);
+    }
+    query = query.orderBy(sortField, 'desc');
+
+    const snapshot = await query.get();
     
     const coffees: Coffee[] = snapshot.docs.map(doc => {
       const data = doc.data() as any;

@@ -7,11 +7,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get all coffees
   app.get("/api/coffees", async (req, res) => {
     try {
-      // allow sorting by date or overall taste rating
+      // allow sorting by date or overall taste rating, and optional filter by
+      // brand name. `brand` is expected to match the stored `brandName`.
       const sortParam = req.query.sort as string | undefined;
-      console.log("GET /api/coffees sortParam=", sortParam);
+      const brandParam = req.query.brand as string | undefined;
+      console.log("GET /api/coffees sortParam=", sortParam, "brand=", brandParam);
+
       const sortKey = sortParam === "overallTasteRating" ? "overallTasteRating" : "orderDate";
-      const coffees = await storage.getCoffees(sortKey as any);
+      const coffees = await storage.getCoffees(sortKey as any, brandParam);
       res.json(coffees);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch coffees" });
